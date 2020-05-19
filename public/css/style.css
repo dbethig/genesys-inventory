@@ -1,0 +1,87 @@
+body {
+	background-color: #fff;
+}
+
+nav.navbar {
+	margin-bottom: 20px;
+}
+
+/*
+ *------------------------------
+ *Character View Page
+ *------------------------------
+ */
+
+#char-view-container section {
+	margin-bottom: 2rem;
+}
+
+
+.attribute-inner h4 {
+  margin-bottom: 0;
+  width: 100%;
+}
+
+.enc-inner > span {
+  font-size: 0.8rem;
+}
+
+.enc-wrap {
+  width: 100%;
+}
+
+.enc-inner {
+  flex: 1 1 0px;
+}
+
+.enc-inner:first-child {
+  border-right: 1px solid #a2a2a2;
+}
+
+.char-inner input, .characteristics-wrap input {
+  text-align: center;
+	max-width: 100px;
+}
+
+.characteristics-inner, .attribute-inner {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	min-width: 150px;
+	text-align: center;
+	border-width: 1px 2px 4px 2px;
+	border-style: solid;
+	border-color: #a2a2a2;
+	border-radius: 2px 2px 20px 20px;
+	padding: 4px 30px;
+}
+
+
+/*
+ *-----------------------------------------
+ * Item page
+ *----------------------------------------
+ */
+
+.cost-wrap {
+	position: relative;
+}
+/* Chrome, Safari, Edge, Opera */
+input.form-cost::-webkit-outer-spin-button,
+input.form-cost::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input.form-cost {
+  -moz-appearance: textfield;
+}
+.item-cost-label {
+ position: absolute;
+ right: 0.5em;
+ top: 50%;
+ transform: translateY(-50%);
+ line-height: 1;
+ color: #808080;
+}
