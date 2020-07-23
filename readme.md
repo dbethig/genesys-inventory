@@ -13,7 +13,7 @@ This is my first major project where I have created the MVC framework from scrat
 ## Technologies
 * [Laragon](https://laragon.org/) - Local server
 
-Project s created with:
+Project created with:
 * PHP 7
 * Bootstrap 4.5
 * jQuery 3.5.1
