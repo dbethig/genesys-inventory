@@ -18,18 +18,14 @@ Project created with:
 * Bootstrap 4.5
 * jQuery 3.5.1
 * FontAwesome 4
+* MySQL 5.7.24
 
 ## Setup
-### Prerequisites
-This project has been built to communicate with a SQL database.
-
-### Installing
 I have included the database table structure.
+[genesys.sql](genesys.sql)
 
-Set the db and url info via the config.php file.
-```
-app > config > config.php
-```
+Set the database and url info via the config.php file.
+![app > config > config.php](config-file.png)
 
-## Authors
+## Author
 * **Daniel Bettell-Higgins** - *All work*
