@@ -1,4 +1,3 @@
-# Genesys Inventory Tracker
 ![Genesys Inventory Tracker](/public/img/project-logo.png)
 
 ## Table of contents
