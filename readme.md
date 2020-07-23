@@ -24,7 +24,7 @@ Project created with:
 I have included the database table structure.
 [genesys.sql](genesys.sql)
 
-Set the database and url info via the config.php file.
+Set the database and url info via the config.php file.  
 ![app > config > config.php](config-file.png)
 
 ## Author
