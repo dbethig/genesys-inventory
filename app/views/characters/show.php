@@ -6,10 +6,11 @@
 // Display available flash messages
 flash('page_msg');
 flash('page_err');
+// print_r($data);
 ?>
 <div class="mb-3">
 	<a href="<?php echo URLROOT; ?>/characters" class="btn btn-light"><i class="fa fa-backward"></i></a>
-	<a href="<?php echo URLROOT; ?>/characters/edit/<?php echo $data['character']->char__id; ?>" class="btn btn-outline-success pull-right">Edit Character</a>
+	<a href="<?php echo URLROOT; ?>/characters/edit/<?php echo $data['character']->char__id; ?>" class="btn btn-outline-success float-right">Edit Character</a>
 </div>
 <div>
 	<div id="char-view-container" class="d-flex flex-column">
@@ -64,74 +65,17 @@ flash('page_err');
 					</div>
 				</section>
 		</div>
+
 <?php
 /*
  * =============================================
  * Inventory View
  * =============================================
  */
-?>
-		<div class="inv_wrap mb-3">
-			<section>
-				<div id="char-view-container" class="d-flex flex-column">
-					<div id="inventory__<?php echo $data['inventory']->inv__id; ?>" class="card card-body mb-3 inventory-wrap">
-						<h3>Inventory</h2>
-						<?php foreach ($data['containers'] as $container): ?>
-							<div class="card card-body mb-3 container-wrap">
-								<h4><?php echo $container->cont__name; ?></h4>
-								<?php
-								if (!empty($data['items'][$container->cont__id])) :
-									?>
-									<table class="mb-4">
-										<thead>
-											<tr>
-												<th>Name</th>
-												<th>Enc</th>
-												<th>Qty</th>
-												<th>Total Enc</th>
-												<th>Cost</th>
-												<th>Notes</th>
-												<th></th>
-											</tr>
-										</thead>
-										<tbody>
-									<?php
-									foreach ($data['items'][$container->cont__id] as $item): ?>
-											<tr>
-												<td><?php echo $item->item__name; ?></td>
-												<td><?php echo $item->item__enc; ?></td>
-												<td><?php echo $item->item__qty; ?></td>
-												<td><?php echo ($item->item__enc * $item->item__qty); ?></td>
-												<td><?php echo $item->item__cost; ?>sp</td>
-												<td><?php echo $item->item__notes; ?></td>
-												<td style="text-align:right;"><a href="<?php echo URLROOT; ?>/items/viewItem/<?php echo $data['character']->char__id .':' .$item->item__id; ?>" class="btn btn-outline-primary" style="min-width: 70px;">View</a>
-												<a href="<?php echo URLROOT; ?>/items/edit/<?php echo $data['character']->char__id .':' .$item->item__id; ?>" class="btn btn-outline-success" style="min-width: 70px;">Edit</a>
-												<a href="<?php echo URLROOT; ?>/items/delete/<?php echo $data['character']->char__id .':' .$item->item__id; ?>" class="btn btn-outline-danger ml-3"><i class="fa fa-trash"></i></a>
-												<!-- Button trigger modal -->
-												<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal" data-item_name="<?php echo $item->item__name; ?>">
-												  Launch demo modal
-												</button>
-												</td>
-											</tr>
-									<?php endforeach;
-									?>
-										</tbody>
-									</table>
-									<a href="<?php echo URLROOT; ?>/items/newitem/<?php echo $data['character']->char__id . ':' .$container->cont__id; ?>" class="btn btn-success btn-block">Add an item</a>
-									<?php
-								else:
-									?>
-									<a href="<?php echo URLROOT; ?>/inventories/newitem/<?php echo $container->cont__id; ?>" class="btn btn-success btn-block">Add an item</a>
-									<?php
-								endif;
-								?>
-							</div>
-						<?php endforeach; ?>
-						<a href="<?php echo URLROOT; ?>/inventories/newcontainer/<?php echo $data['inventory']->inv__id; ?>" class="btn btn-success btn-block">Add a container</a>
-					</div>
-				</div>
-			</section>
-		</div>
+		 require_once 'characterShowInv.php';
+		?>
+
 
 	</div>
 </div>
+<?php include APPROOT . '/views/pages/debug.php'; ?>

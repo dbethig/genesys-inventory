@@ -1,45 +1,112 @@
 body {
 	background-color: #fff;
+	min-height: 100vh;
 }
 
 nav.navbar {
 	margin-bottom: 20px;
 }
 
-/*
- *------------------------------
- *Character View Page
- *------------------------------
- */
+p.form-control {
+	margin-bottom: 0;
+}
 
+/*
+ *==============================
+ * Index
+ *==============================
+*/
+.task-done {
+	text-decoration: line-through !important;
+	opacity: 0.5 !important;
+	color: green !important;
+}
+
+.task-active {
+	text-decoration: underline;
+	color: blue !important;
+	font-weight: bold;
+}
+
+.task-stuck {
+	text-decoration: underline;
+	color: red !important;
+	font-weight: bold;
+}
+
+.task-pr-h {
+	color: green;
+}
+
+.task-pr-m {
+	color: orange;
+}
+
+.task-pr-l {
+	color: #3d3d3d;
+}
+
+/*
+ *==============================
+ * Generic Page
+ *==============================
+ */
+.order-wrap {
+	margin-right: .25rem;
+}
+
+.order-arr-wrap {
+	flex: 1 0 auto;
+	border: 1px solid #dfdfdf;
+	color: #dfdfdf;
+	padding: 10px;
+}
+
+.order-arr-wrap:first-child {
+	margin-bottom: .25rem;
+}
+
+.form-group {
+	display: flex;
+	flex-direction: column;
+}
+
+.form-group > label {
+	margin-top: auto;
+}
+
+/*
+ *==============================
+ * Character View Page
+ *==============================
+ */
 #char-view-container section {
 	margin-bottom: 2rem;
 }
 
-
 .attribute-inner h4 {
-  margin-bottom: 0;
-  width: 100%;
+	margin-bottom: 0;
+	width: 100%;
 }
 
-.enc-inner > span {
-  font-size: 0.8rem;
+.enc-inner>span {
+	font-size: 0.8rem;
 }
 
 .enc-wrap {
-  width: 100%;
+	width: 100%;
 }
 
 .enc-inner {
-  flex: 1 1 0px;
+	flex: 1 1 0px;
 }
 
 .enc-inner:first-child {
-  border-right: 1px solid #a2a2a2;
+	border-right: 1px solid #a2a2a2;
 }
 
 .char-inner input, .characteristics-wrap input {
-  text-align: center;
+	text-align: center;
 	max-width: 100px;
 }
 
@@ -56,32 +123,119 @@ nav.navbar {
 	padding: 4px 30px;
 }
 
+/*
+ *========================================-
+ * Container list view
+ *========================================
+ */
+.char-cont-head {
+	margin-bottom: 5px;
+	padding-bottom: 5px;
+	border-bottom: 1px solid #dfdfdf;
+}
+
+.char-cont-head p {
+	/* text-align: center; */
+	font-size: .8rem;
+	margin-bottom: 0;
+}
+
+.char-cont-wrap .fa-pen-square {
+	font-size: 2rem;
+	color: #28a745;
+}
+
+.char-cont-wrap .fa-pen-square:hover {
+	color: #218838;
+}
 
 /*
- *-----------------------------------------
+ *========================================-
  * Item page
- *----------------------------------------
+ *========================================
  */
-
 .cost-wrap {
 	position: relative;
 }
+
 /* Chrome, Safari, Edge, Opera */
 input.form-cost::-webkit-outer-spin-button,
 input.form-cost::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+	-webkit-appearance: none;
+	margin: 0;
 }
 
 /* Firefox */
 input.form-cost {
-  -moz-appearance: textfield;
+	-moz-appearance: textfield;
 }
+
 .item-cost-label {
- position: absolute;
- right: 0.5em;
- top: 50%;
- transform: translateY(-50%);
- line-height: 1;
- color: #808080;
+	position: absolute;
+	right: 0.5em;
+	top: 50%;
+	transform: translateY(-50%);
+	line-height: 1;
+	color: #808080;
+}
+
+/* ITEM GRID */
+.item-grid-container {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	grid-template-rows: repeat(5, 1fr);
+	gap: 10px 10px;
+}
+
+.item-name {
+	grid-area: 1 / 1 / 2 / 7;
+}
+
+.item-type {
+	grid-area: 1 / 7 / 2 / 8;
+}
+
+.item-enc {
+	grid-area: 2 / 1 / 3 / 2;
+}
+
+.item-cost {
+	grid-area: 3 / 1 / 4 / 2;
+}
+
+.item-qty {
+	grid-area: 2 / 2 / 4 / 3;
+}
+
+.item-total-enc {
+	grid-area: 2 / 3 / 3 / 4;
+}
+
+.item-total-cost {
+	grid-area: 3 / 3 / 4 / 4;
+}
+
+.item-desc {
+	grid-area: 5 / 1 / 6 / 8;
+}
+
+/*
+ *========================================-
+ * Item view
+ *========================================
+ */
+.item-checkbox {
+	width: calc(1.5em + .75rem + 2px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.checkbox-checked {
+	background-color: #0075ff;
+	color: #fff;
+}
+
+.checkbox-checked svg.fa-check {
+	font-size: 1.6em;
 }

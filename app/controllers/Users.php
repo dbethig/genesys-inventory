@@ -215,6 +215,7 @@ class Users extends Controller {
 		$_SESSION['user_email'] = $user->user__email;
 		$_SESSION['user_fname'] = $user->user__fname;
 		$_SESSION['user_sname'] = $user->user__sname;
+		$_SESSION['setting'] = 'terrinoth';
 		url_redirect('index');
 	}
 

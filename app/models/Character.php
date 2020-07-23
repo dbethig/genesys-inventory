@@ -91,17 +91,17 @@ Class Character {
 											WHERE char__id = :id'
 										);
 		// Bind values
-		$this->db->bind(':id', $data['char_id']);
-		$this->db->bind(':name', $data['charname']);
-		$this->db->bind(':brawn', $data['characteristic_brawn']);
-		$this->db->bind(':agility', $data['characteristic_agility']);
-		$this->db->bind(':intellect', $data['characteristic_intellect']);
-		$this->db->bind(':cunning', $data['characteristic_cunning']);
-		$this->db->bind(':will', $data['characteristic_willpower']);
-		$this->db->bind(':presence', $data['characteristic_presence']);
-		$this->db->bind(':soak', $data['soak']);
-		$this->db->bind(':enc_total', $data['enc_total']);
-		$this->db->bind(':enc_curr', $data['enc_curr']);
+		$this->db->bind(':id', $data['char__id']);
+		$this->db->bind(':name', $data['char__name']);
+		$this->db->bind(':brawn', $data['char__characteristic_brawn']);
+		$this->db->bind(':agility', $data['char__characteristic_agility']);
+		$this->db->bind(':intellect', $data['char__characteristic_intellect']);
+		$this->db->bind(':cunning', $data['char__characteristic_cunning']);
+		$this->db->bind(':will', $data['char__characteristic_willpower']);
+		$this->db->bind(':presence', $data['char__characteristic_presence']);
+		$this->db->bind(':soak', $data['char__soak']);
+		$this->db->bind(':enc_total', $data['char__enc_total']);
+		$this->db->bind(':enc_curr', $data['char__enc_curr']);
 
 		// Execute the query
 		if($this->db->execute()) {
@@ -125,6 +125,44 @@ Class Character {
 	public function deleteCharacter($id) {
 		$this->db->query('DELETE FROM characters WHERE char__id = :id');
 		// Bind values
+		$this->db->bind(':id', $id);
+		// Execute the query
+		if($this->db->execute()) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public function updateEncCurrent($id, $enc) {
+		$this->db->query('UPDATE characters
+											SET char__enc_curr = :enc
+											WHERE char__id = :id
+										');
+		$this->db->bind(':enc', $enc);
+		$this->db->bind(':id', $id);
+		// Execute the query
+		if($this->db->execute()) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public function updateEncTotal($id, $enc) {
+		// Get brawn value of character
+		$this->db->query('SELECT char__characteristic_brawn FROM characters WHERE char__id = :id');
+		$this->db->bind(':id', $id);
+		$row = $this->db->single();
+		$brawn = $row->char__characteristic_brawn;
+		// Calculate enc total (Brawn + worn item total + 5)
+		$encTotal = $brawn + $enc + 5;
+		// Update character enc_total
+		$this->db->query('UPDATE characters
+											SET char__enc_total = :enc
+											WHERE char__id = :id
+										');
+		$this->db->bind(':enc', $encTotal);
 		$this->db->bind(':id', $id);
 		// Execute the query
 		if($this->db->execute()) {

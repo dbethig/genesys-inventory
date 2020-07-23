@@ -13,7 +13,6 @@ class Core {
 
 	public function __construct() {
 		$url = $this->getURL();
-
 		if(file_exists('../app/controllers/' . $url[0] . '.php')) {
 			// if exists, set as controller
 			$this->curretController = ucwords($url[0]);

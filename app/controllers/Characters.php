@@ -10,11 +10,11 @@ class Characters extends Controller {
 		$this->itemModel = $this->model('Item');
 		$this->data_err = false;
 	}
-	/**
-	* ----------------------------------------
-	* Get all characters for user
-	* ----------------------------------------
-	*/
+/*
+ * ----------------------------------------
+ * Get all characters for user
+ * ----------------------------------------
+ */
 	public function index() {
 		// Redirect to the login page if the user is not logged in
 		if(!isLoggedIn()) {
@@ -53,9 +53,21 @@ class Characters extends Controller {
 				url_redirect('characters');
 				exit();
 			}
-			$inventory = $this->inventoryModel->getInventoryByCharacter($character->char__id);
-			$containers = $this->containerModel->getContainers($inventory->inv__id);
-			$items = $this->itemModel->getItems($containers);
+			$inventory = $this->inventoryModel->getInventoryByCharacter($character->char__id); // Obj
+			$containers = $this->containerModel->getContainers($inventory->inv__id); // Array of container obj
+			$containerEnc = !empty($containers) ? $this->containerModel->calcContainerEnc($containers) : 0; // Sum of all containers with !isNull(cont__enc) && cont__worn !== 0
+			$items = !empty($containers) ? $this->itemModel->getItems($containers) : ''; // Assoc array of the containers with the items as obj inside Eg. Array([cont__id]=>[item_obj, item_obj])
+			$itemsEnc = !empty($items) ? $this->itemModel->calcItemEnc($items) : 0; // Sum of all items in 'worn' containers
+
+
+			// echo "<p>$containerEnc</p><p>";
+			// print_r($items);
+			// echo "</p><p>$itemsEnc</p>";
+			// die();
+			// Should this be done when an item is created/edited?
+			$this->characterModel->updateEncCurrent($id, $itemsEnc);
+			$this->characterModel->updateEncTotal($id, $containerEnc);
+			$character = $this->characterModel->getCharacterById($id);
 			$data = [
 				'user_id' => $_SESSION['user_id'],
 				'character' => $character,
@@ -63,6 +75,10 @@ class Characters extends Controller {
 				'containers' => $containers,
 				'items' => $items
 			];
+			echo "<p>Container Enc Total: $containerEnc</p>";
+			echo "<p>Item Enc Total: $itemsEnc</p>";
+			// print_r($data);
+			// die();
 			$this->view('characters/show', $data);
 		} catch (CustomException $e) {
 			flash('page_err', 'Character not found!', 'alert alert-danger');
@@ -78,28 +94,29 @@ class Characters extends Controller {
 		if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 			// Sanitize POST array
 			$_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
-			$data = [
-				'user_id' => $_SESSION['user_id'],
-			];
 			// Add POST array to $data
-			$data = array_merge($data, $_POST);
+			$data['character']['char__user_id'] = $_SESSION['user_id'];
+			$data['character'] = array_merge($data['character'], $_POST);
+			// print_r($data);
+			// die();
 			// Validate fields and add errors
 			$dataWithErrors = $this->validateCharacterFields($data);
 			// Check for error entries in $data array
 			if ($this->data_err === false) {
 				// Form validated
 				// Create new character and store in this variable
-				$newChar = $this->characterModel->createCharacterReturnRow($data);
+				$newChar = $this->characterModel->createCharacterReturnRow($data['character']);
 				if ($newChar) {
 					// Create a new inventory
 					$newInventoryId = $this->inventoryModel->createInventoryGetId($newChar->char__id);
 					if ($newInventoryId) {
 						$containerData = [
-							'inv_id' => $newInventoryId,
-							'name' => 'General',
-							'descr' => NULL,
-							'capacity' => NULL,
-							'enc' => NULL
+							'cont__inv_id' => $newInventoryId,
+							'cont__name' => 'General',
+							'cont__descr' => NULL,
+							'cont__capacity' => NULL,
+							'cont__enc' => NULL,
+							'cont__worn' => 1
 						];
 						$container = $this->containerModel->createContainer($containerData);
 						if ($container == TRUE) {
@@ -132,16 +149,16 @@ class Characters extends Controller {
 		} else {
 			// Not a POST request
 			$data = [
-				'charname' => '',
-				'characteristic_brawn' => '2',
-				'characteristic_agility' => '2',
-				'characteristic_intellect' => '2',
-				'characteristic_cunning' => '2',
-				'characteristic_willpower' => '2',
-				'characteristic_presence' => '2',
-				'soak' => '2',
-				'enc_total' => '7',
-				'enc_curr' => '0'
+				'char__name' => '',
+				'char__characteristic_brawn' => '2',
+				'char__characteristic_agility' => '2',
+				'char__characteristic_intellect' => '2',
+				'char__characteristic_cunning' => '2',
+				'char__characteristic_willpower' => '2',
+				'char__characteristic_presence' => '2',
+				'char__soak' => '2',
+				'char__enc_total' => '7',
+				'char__enc_curr' => '0'
 			];
 			foreach ($data as $key => $value) {
 				$data[$key .'_err'] = '';
@@ -164,15 +181,17 @@ class Characters extends Controller {
 			//
 			// Sanitize POST array
 			$_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
-			$data = ['char_id' => $id, 'user_id' => $_SESSION['user_id']];
 			// Add POST array into $data
-			$data = array_merge($data, $_POST);
+			$data['character'] = $_POST;
+			$data['character']['char__id'] = $id;
+			$data['user_id'] = $_SESSION['user_id'];
+			print_r($data);
 			// Validate fields
 			$dataWithErrors = $this->validateCharacterFields($data);
 			// Check is any errors where detected when validating
 			if ($this->data_err === false) {
 				// Form validated
-				if ($this->characterModel->updateCharacter($data)) {
+				if ($this->characterModel->updateCharacter($data['character'])) {
 					flash('page_msg', 'Character updated!');
 					url_redirect('characters/show/' . $id);
 				} else {
@@ -195,19 +214,13 @@ class Characters extends Controller {
 					exit();
 				}
 				$data = [
-					'char_id' => $id,
-					'charname' => $character->char__name,
-					'characteristic_brawn' => $character->char__characteristic_brawn,
-					'characteristic_agility' => $character->char__characteristic_agility,
-					'characteristic_intellect' => $character->char__characteristic_intellect,
-					'characteristic_cunning' => $character->char__characteristic_cunning,
-					'characteristic_willpower' => $character->char__characteristic_willpower,
-					'characteristic_presence' => $character->char__characteristic_presence,
-					'soak' => $character->char__soak,
-					'enc_total' => $character->char__enc_total,
-					'enc_curr' => $character->char__enc_curr,
+					'user_id' => $_SESSION['user_id'],
+					'character' => (array) $character
 				];
-				$data = $this->validateCharacterFields($data);
+				foreach ($data['character'] as $key => $value) {
+					$data[$key .'_err'] = '';
+				}
+				// $data = $this->validateCharacterFields($data);
 				$this->view('characters/edit', $data);
 			} catch (CustomException $e) {
 				// $e->pageError();
@@ -298,34 +311,35 @@ class Characters extends Controller {
  * Validate all the character fields
  * ============================================================
  */
-	public function validateCharacterFields($data = []) {
+	public function validateCharacterFields($data) {
 		// Validate CharName
-		if (!$this->validateField($data['charname'])) {
+		if (!$this->validateField($data['character']['char__name'])) {
 			$data['charname_err'] = 'Please enter a name for your character';
 			$this->data_err = true;
 		}
 		// Validate characteristics
-		$c = $this->validateFields($data, 'Please enter a value.', 'characteristic_');
+		$c = $this->validateFields($data['character'], 'Please enter a value.', 'char__characteristic_');
 		$data = array_merge($data, $c);
 		// Validate soak
-		if (!$this->validateField($data['soak'])) {
-			if ($this->validateField($data['characteristic_brawn'])) {
-				$data['soak'] = $data['characteristic_brawn'];
+		if (!$this->validateField($data['character']['char__soak'])) {
+			if ($this->validateField($data['character']['char__characteristic_brawn'])) {
+				$data['character']['char__soak'] = $data['character']['char__characteristic_brawn'];
 			} else {
 				$this->data_err = true;
 			}
 		}
 		// Validate encumberance
-		if (!$this->validateField($data['enc_total'])) {
-			if ($this->validateField($data['characteristic_brawn'])) {
-				$data['enc_total'] = $data['characteristic_brawn'] + 5;
+		if (!$this->validateField($data['character']['char__enc_total'])) {
+			if ($this->validateField($data['character']['char__characteristic_brawn'])) {
+				$data['character']->char__enc_total = $data['character']['char__characteristic_brawn'] + 5;
 			} else {
 				$this->data_err = true;
 			}
 		}
-		if (!$this->validateField($data['enc_curr'])) {
-			$data['enc_curr'] = 0;
+		if (!$this->validateField($data['character']['char__enc_curr'])) {
+			$data['character']['char__enc_curr'] = 0;
 		}
+
 		return $data;
 	}
 }

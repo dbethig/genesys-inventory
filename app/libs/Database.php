@@ -57,7 +57,7 @@ class Database {
 	public function bind($param, $val, $type = null) {
 		if (is_null($type)) {
 			switch(true) {
-				case is_int($val):
+				case (is_int($val)):
 					$type = PDO::PARAM_INT;
 					break;
 				case is_bool($val):
@@ -70,8 +70,12 @@ class Database {
 					$type = PDO::PARAM_STR;
 			}
 		}
-
-		$this->stmt->bindValue($param, $val, $type);
+		// echo "<p>BIND: $param => $val</p>";
+		if ($val === '') {
+			$this->stmt->bindValue($param, null, $type);
+		} else {
+			$this->stmt->bindValue($param, $val, $type);
+		}
 	}
 /*
  * ====================================================
@@ -80,26 +84,14 @@ class Database {
  */
 	public function bindArrays($params, $vals, $type = null) {
 		foreach ($params as $param) {
+			// Loop through placeholders
+			// Remove : from string
 			$p = substr($param, 1);
 			foreach ($vals as $key => $val) {
+				// Loop through Values to bind
 				if ($p == $key) {
-					if (is_null($type)) {
-						switch(true) {
-							case is_int($val):
-								$type = PDO::PARAM_INT;
-								break;
-							case is_bool($val):
-								$type = PDO::PARAM_BOOL;
-								break;
-							case is_null($val):
-								$type = PDO::PARAM_NULL;
-								break;
-							default:
-								$type = PDO::PARAM_STR;
-						}
-					}
-					// echo "<p>BIND: $param, $val, $type</p>";
-					$this->stmt->bindValue($param, $val, $type);
+					// If placeholder = value array key bind it
+					$this->bind($param, $val);
 				}
 			}
 		}
@@ -114,6 +106,11 @@ class Database {
 	public function resultSet() {
 		$this->execute();
 		return $this->stmt->fetchAll(PDO::FETCH_OBJ);
+	}
+
+	public function resultSetArray() {
+		$this->execute();
+		return $this->stmt->fetchAll(PDO::FETCH_ASSOC);
 	}
 
 	// Get single record as objects

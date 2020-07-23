@@ -1,5 +1,5 @@
 <a href="<?php echo URLROOT; ?>/posts/show/<?php echo $data['id']; ?>" class="btn btn-light"><i class="fa fa-backward"></i></a>
-<form class="pull-right" action="<?php echo URLROOT; ?>/posts/delete/<?php echo $data['id']; ?>" method="post">
+<form class="float-right" action="<?php echo URLROOT; ?>/posts/delete/<?php echo $data['id']; ?>" method="post">
 	<input type="submit" value="Delete" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this post?')">
 </form>
 <div class="card card-body bg-light mt-5">

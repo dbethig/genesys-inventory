@@ -13,12 +13,13 @@ class Items extends Controller {
  * ============================================================
  */
 	public function viewItem($ids) {
-		// characterId?itemId
+		// characterId:itemId
 		$ids = explode(':', $ids);
 		$charId = $ids[0];
 		$itemId = $ids[1];
 		$data = $this->loadItem($itemId, $charId);
-		$data['item__type_name'] = $this->itemModel->getTypeName($data['item']->item__type_id);
+		$data['item__type_name'] = $this->itemModel->getTypeName($data['item']['item__type_id']);
+		$data['item_attributes'] = $this->itemModel->getAttributes($data['item']['item__type_id']);
 		$this->view('item/viewItem', $data);
 	}
 /*
@@ -35,57 +36,79 @@ class Items extends Controller {
 		if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 			// Sanitize POST array
 			$_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
-			$data = [
+			$data['item'] = [
 				'item__container_id' => $contId
 			];
 			// Add POST array to $data
-			$data = array_merge($data, $_POST);
-			// Validate fields
-			$data = $this->validateFields($data);
+			$data['item'] = array_merge($data['item'], $_POST);
+			// Incidental item check & process
+			$data['item'] = $this->incidentalItem($data['item']);
+			// Add & calculate total cost if it is not set in data array
+			$this->totalCostCalc($data['item']);
+			// Validate fields and compire errors array
+			$errors = $this->validateFields($data['item']);
+			$data['item_err'] = $errors;
+
 			// Check for error entries in $data array
 			if ($this->data_err === false) {
 				// Form validated
-				$newItem = $this->itemModel->createItemReturnRow($data);
+				// Create Item -----------------------------------
+				// printAndDie($data['item']);
+				$newItem = $this->itemModel->createItemReturnRow($data['item']);
 				if ($newItem) {
+					// Item created
 					flash('page_msg', 'Item Created!');
-					$this->loadEditItem($charId, $newItem->item__id);
+					$itemId = $newItem->item__id;
+					url_redirect("items/viewItem/$charId:$itemId");
 				} else {
+					// Error creating item
 					flash('page_err', 'Error creating item', 'alert alert-danger');
 					url_redirect('characters/show/' .$charId);
 				}
 			} else {
-				$data['item__char_id'] = $charId;
+				// flash('page_err', 'Error creating item', 'alert alert-danger');
+				$data['item__character_id'] = $charId;
+				$data['item_types'] = $this->loadTypes();
 				// Return to page with errors
 				$this->view('item/newitem', $data);
 			}
 		} else {
 			// Not a POST request
 			// Load blank data & view for user input
-			$data = [
-				'item__char_id' => $charId,
+			$data['item__character_id'] = $charId;
+			$data['item'] = [
 				'item__container_id' => $contId,
 				'item__name' => '',
 				'item__desc' => '',
-				'item__enc' => '',
-				'item__qty' => '',
-				'item__cost' => '',
+				'item__inc' => '0',
+				'item__packed' => '0',
+				'item__enc' => '0',
+				'item__enc_total' => '0',
+				'item__enc_total_cust' => '0',
+				'item__qty' => '1',
+				'item__cost' => '0',
+				'item__cost_total' => '0',
+				'item__cost_total_cust' => '0',
+				'item__condition' => '',
 				'item__notes' => '',
-				'item__damage' => '',
-				'item__crit' => '',
-				'item__range' => '',
-				'item__defence' => '',
-				'item__soak' => '',
-				'item__hp' => '',
+				// 'item__damage' => '',
+				// 'item__damage_add' => '',
+				// 'item__damege_ability' => 'Brawn',
+				// 'item__crit' => '',
+				// 'item__range' => '',
+				// 'item__defence' => '',
+				// 'item__soak' => '',
+				// 'item__skill' => '',
+				'item__hp_total' => '0',
+				'item__hp_current' => '0',
 				'item__rarity' => '',
-				'item__skill' => '',
-				'item__special' => ''
+				'item__special' => '',
+				'item__type_id' => 4 // General
 			];
-
 			foreach ($data as $key => $value) {
-				$data[$key .'_err'] = '';
+				$data['item_err'][$key .'_err'] = '';
 			}
-			$types = $this->itemModel->getTypes();
-			$data['item_types'] = $types;
+			$data['item_types'] = $this->loadTypes();
 			$this->view('item/newitem', $data);
 		}
 	}
@@ -107,32 +130,54 @@ class Items extends Controller {
 			];
 			// Add POST array to $data
 			$data['item'] = array_merge($data['item'], $_POST);
-			// print_r($data);
-			// Validate fields
-			$data['item'] = $this->validateFields($data['item']);
+			// Incidental item check & process
+			$data['item'] = $this->incidentalItem($data['item']);
+			// Add & calculate total cost if it is not set in data array
+			$this->totalCostCalc($data['item']);
+			// Validate fields and compire errors array
+			$errors = $this->validateFields($data['item']);
+			$data['item_err'] = $errors;
+
+			// printAndDie($data);
 			// Check for error entries in $data array
 			if ($this->data_err === false) {
 				// Form validated
-				if ($this->itemModel->editItem($itemId, $data['item'])) {
+				// printAndDie($data);
+				if ($this->itemModel->updateItem($data['item'])) {
 					flash('page_msg', 'Item updated!');
 				} else {
 					flash('page_err', 'Error updating item', 'alert alert-danger');
 				}
-
 				url_redirect('characters/show/' .$charId);
 			} else {
 				$data['item__character_id'] = $charId;
 				$types = $this->itemModel->getTypes();
 				$data['item_types'] = $types;
 
+				flash('page_err', 'Error creating item', 'alert alert-danger');
 				// Return to page with errors
 				$this->view('item/edit', $data);
 			}
 		} else {
 			// Not a POST request
 			$data = $this->loadEditItem($itemId, $charId);
+			// print_r($data);
 			$this->view('item/edit', $data);
 		}
+	}
+/*
+ * ============================================================
+ * Load item attribute elements view
+ * ============================================================
+ */
+	public function showAttr($typeId = 4, $itemId = null) {
+		$type = $this->itemModel->getAttributesWithMeta($typeId);
+		$item = $itemId?$this->itemModel->getItem($itemId):NULL;
+		$data = [
+			'type' => $type,
+			'item' => $item
+		];
+		$this->view('item/itemAttrs', $data, '', false);
 	}
 /*
  * ============================================================
@@ -148,7 +193,7 @@ class Items extends Controller {
 			exit();
 		}
 		// Load data & view for user input
-		$data['item'] = $item;
+		$data['item'] = (array) $item;
 		$data['item__character_id'] = $charId;
 		foreach ($data as $key => $value) {
 			$data['item_err'][$key .'_err'] = '';
@@ -162,10 +207,15 @@ class Items extends Controller {
  */
 	public function loadEditItem($itemId, $charId)	{
 		$data = $this->loadItem($itemId, $charId);
-		$types = $this->itemModel->getTypes();
-		$data['item_types'] = $types;
+		$data['item_types'] = $this->loadTypes();
 		return $data;
 	}
+
+	public function loadTypes() {
+		$types = $this->itemModel->getTypes();
+		return $types;
+	}
+
 /*
  * ============================================================
  * Delete an item
@@ -212,24 +262,54 @@ class Items extends Controller {
  * Validate character fields
  * ============================================================
  */
-	public function validateFields($data, $msg = 'Enter a valid number') {
+	public function validateFields($data) {
+		$errors = [];
+		// All required fields
+		$reqFields = [
+			'item__name' => 'Name',
+			'item__enc' => 'Encumberance',
+			'item__enc_total' => 'Value',
+			'item__qty' => 'Quantity'
+		];
 		// All integer fields
-		$intFields = ['item__enc', 'item__qty', 'item__cost', 'item__ damage', 'item__crit', 'item__defence', 'item__soak', 'item__hp', 'item__rarity'];
-		// Validate name field
-		if (empty($data['item__name'])) {
-			$data['item__name_err'] = 'Please enter a name.';
-			$this->data_err = true;
+		$intFields = [
+			'item__enc' => 'Encumberance',
+			'item__enc_total' => '',
+			'item__qty' => 'Quantity',
+			'item__cost' => 'Cost',
+			'item__cost_total' => '',
+			'item__ damage' => '',
+			'item__crit' => '',
+			'item__defence' => '',
+			'item__soak' => '',
+			'item__hp' => '',
+			'item__rarity' => ''
+		];
+
+		// Validate required fields
+		foreach ($reqFields as $f => $m) {
+			if (!isset($data[$f])) {
+				$errors[$f .'_err'] = $this->writeArrayError($f, $m .' Required');
+			}
+		}
+		if (!($data['item__name'])) {
+			$errors['item__name_err'] = $this->writeArrayError('item__name', $data['item__name'] .' Required');
 		}
 		// Validate all integer fields
-		foreach ($intFields as $int) {
-			if (!empty($data[$int])) {
-				if (!is_numeric($data[$int])) {
-					$data[$int .'_err'] = $msg;
-					$this->data_err = true;
+		foreach ($intFields as $f => $m) {
+			if (isset($data[$f])) {
+				if (!is_numeric($data[$f]) && !empty($data[$f])) {
+					$errors[$f .'_err'] = $this->writeArrayError($f, $m);
 				}
 			}
 		}
-		return $data;
+		return $errors;
+	}
+
+	public function writeArrayError($f, $m = '') {
+		$error = $m != '' ? $m : 'Invalid Value';
+		$this->data_err = true;
+		return $error;
 	}
 
 	public function itemToData($item) {
@@ -238,6 +318,56 @@ class Items extends Controller {
 			$result[$att] = $val;
 		}
 		return $result;
+	}
+
+	public function incidentalItem($d) {
+		$d['item__enc'] = !array_key_exists('item__enc', $d) ? 0 : $d['item__enc'];
+		$d['item__enc'] = !array_key_exists('item__enc', $d) ? 0 : $d['item__enc'];
+		$d['item__enc'] = !array_key_exists('item__enc', $d) ? 0 : $d['item__enc'];
+		if (!is_numeric($d['item__enc']) || array_key_exists('item__inc', $d)) {
+			$itemEnc = 0;
+			if (!array_key_exists('item__enc_total', $d)) {
+				// Item doesn't have custom enc value
+				if (array_key_exists('item__inc', $d)) {
+					// Item is Incidental
+					if(array_key_exists('item__packed', $d)) {
+						$itemEnc = 0.05;
+						$encCalc = floor($d['item__qty'] * $itemEnc);
+						$d['item__enc_total'] = $encCalc ? $encCalc : 0 ;
+					} else {
+						$itemEnc = 0.1;
+						$encCalc = floor($d['item__qty'] * $itemEnc);
+						$d['item__enc_total'] = $encCalc ? $encCalc : 0 ;
+						$d['item__packed'] = 0;
+					}
+				} else {
+					// Add the inceidental & packed fields to the array. 0 = NULL for SQL purposes
+					$d['item__inc'] = 0;
+					$d['item__packed'] = 0;
+					$encCalc = floor($d['item__qty'] * $d['item__enc']);
+					$d['item__enc_total'] = $encCalc ? $encCalc : 0 ;
+				}
+			}
+			$d['item__enc'] = $itemEnc;
+		}	elseif (!array_key_exists('item__inc', $d)) {
+			$d += [
+				'item__inc' => 0,
+				'item__packed' => 0
+			];
+		}
+		if (!array_key_exists('item__enc_total', $d)) {
+			$d['item__enc_total'] = floor($d['item__qty'] * $d['item__enc']);
+		}
+		return $d;
+	}
+
+	public function totalCostCalc($item) {
+		// It won't be set if the user has not set it themselves as the field will be disabled.
+		if (!array_key_exists('item__cost_total', $item)) {
+			$item['item__cost_total'] = $item['item__qty'] * $item['item__cost'];
+		} elseif (empty($item['item__cost_total']) && $item['item__cost_total_cust'] == 0) {
+			$item['item__cost_total'] = $item['item__qty'] * $item['item__cost'];
+		}
 	}
 
 }

@@ -7,9 +7,9 @@ class Item {
 		$this->db = new Database;
 	}
 
-	public function getItem($itemId) {
+	public function getItem($id) {
 		$this->db->query('SELECT * FROM inv_items WHERE item__id = :item__id');
-		$this->db->bind(':item__id', $itemId);
+		$this->db->bind(':item__id', $id);
 		$row = $this->db->single();
 		if ($this->db->rowCount() > 0) {
 			return $row;
@@ -21,22 +21,23 @@ class Item {
 	public function getItems($containers) {
 		$items = [];
 		foreach ($containers as $container) {
-			// echo "<p>".$container->cont__id."</p>";
-			$this->db->query('SELECT * FROM inv_items WHERE item__container_id = ' .$container->cont__id);
+			$contId = $container->cont__id;
+			// echo "<p>Container ID: $contId</p>";
+			$this->db->query('SELECT * FROM inv_items WHERE item__container_id = ' .$contId);
 			$set = $this->db->resultSet();
-			$items[$container->cont__id] = $set;
+			$this->db->rowCount() > 0 ? $items[$contId] = $set : '';
 		}
-		return $this->db->rowCount() > 0 ? $items : '';
+		return $items !== NULL ? $items : '';
 	}
 
 	public function createItem($data) {
-		$dataString = implode(', ', array_keys($data));
-		$dataParamArr = $this->db->arrayToParams($data);
-		$dataParams = implode(', ', $dataParamArr);
-		// echo 'INSERT INTO inv_items ( ' .$dataString .' ) VALUES ( ' .$dataParams .' )';
-		$this->db->query('INSERT INTO inv_items ( ' .$dataString .' ) VALUES ( ' .$dataParams .' )');
+		$keyString = implode(', ', array_keys($data));
+		$paramArr = $this->db->arrayToParams($data);
+		$params = implode(', ', $paramArr);
+		$this->db->query("INSERT INTO inv_items ($keyString) VALUES ($params)");
+		// printAndDie($data);
 		// Bind values
-		$this->db->bindArrays($dataParamArr, $data);
+		$this->db->bindArrays($paramArr, $data);
 		// Execute the query
 		if($this->db->execute()) {
 			return true;
@@ -48,20 +49,27 @@ class Item {
 
 	public function createItemReturnRow($data) {
 		if ($this->createItem($data)) {
-			$newItemId = $this->db->lastId();
-			$this->db->query('SELECT * FROM inv_items WHERE item__id = ' . $newItemId);
-			$newItem = $this->db->single();
-			return $newItem;
+			$newId = $this->db->lastId();
+			$this->db->query('SELECT * FROM inv_items WHERE item__id = ' . $newId);
+			$newRow = $this->db->single();
+			return $newRow;
 		} else {
 			return false;
 		}
 	}
 
-	public function editItem($itemId, $data) {
-		$dataString = implode(', ', array_keys($data));
-		$dataParamArr = $this->db->arrayToParams($data);
-		$dataParams = implode(', ', $dataParamArr);
+	public function updateItem($data) {
+		// Sepparate the id from the array so it can't be updated.
+		$id = $data['item__id'];
+		unset($data['item__id']);
+		// Split the array into parameters to bind them to the values dynamically
+		$paramArr = $this->db->arrayToParams($data);
+		$params = implode(', ', $paramArr);
+		// printAndDie($data);
+		// Build Query
 		$sql = 'UPDATE inv_items SET ';
+		// Add fields and placeholders
+		// placeholders must have the same name as the fields
 		foreach ($data as $key => $val) {
 			$sql .= "$key = :$key, ";
 		}
@@ -70,8 +78,8 @@ class Item {
 		$sql .= " WHERE item__id = :item__id";
 		$this->db->query($sql);
 		// Bind values
-		$this->db->bindArrays($dataParamArr, $data);
-		$this->db->bind(':item__id', $itemId);
+		$this->db->bindArrays($paramArr, $data);
+		$this->db->bind(':item__id', $id);
 		// Execute the query
 		if($this->db->execute()) {
 			return true;
@@ -136,15 +144,12 @@ class Item {
 		}
 	}
 
-	public function getTypes() {
+/*	public function getTypes() {
 		$this->db->query('SELECT * FROM item_types');
 		$types = $this->db->resultSet();
 		foreach ($types as $type) {
-			$this->db->query('SELECT a.attr__id, a.attr__name
-												FROM item_attr a
-												JOIN type_details d ON a.attr__id = d.tdetails__attr_id
-												WHERE d.tdetails__type_id = ' .$type->type__id
-											);
+			$qry = 'SELECT a.attr__id, a.attr__name FROM item_attr a JOIN type_details d ON a.attr__id = d.tdetails__attr_id WHERE d.tdetails__type_id = ' .$type->type__id;
+			$this->db->query($qry);
 			$attributes = $this->db->resultSet();
 			if ($this->db->rowCount() > 0) {
 				$type->attributes = $attributes;
@@ -153,12 +158,22 @@ class Item {
 					$this->db->query("SELECT item__$attrName FROM inv_items");
 					$attr->meta = $this->db->getMeta();
 				}
-
 			} else {
 				$type->attributes = '';
 			}
 		}
+
 		return $types;
+	}
+*/
+	public function getTypes()	{
+		$this->db->query('SELECT * FROM item_types');
+		$types = $this->db->resultSet();
+		if ($this->db->rowCount() > 0) {
+			return $types;
+		} else {
+			return false;
+		}
 	}
 
 	public function getType($typeId) {
@@ -171,11 +186,54 @@ class Item {
 			return false;
 		}
 	}
+	public function getAttributesWithMeta($typeId) {
+		$type = $this->getAttributes($typeId);
+		if ($this->db->rowCount() > 0) {
+			foreach ($type as $attr) {
+				$attrName = strtolower($attr->attr__name);
+				$this->db->query("SELECT item__$attrName FROM inv_items");
+				$meta = $this->db->getMeta();
+				$attr->meta = $meta['native_type'];
+			}
+			return $type;
+		} else {
+			return false;
+		}
+	}
+
+
+	public function getAttributes($itemTypeId) {
+		$this->db->query('SELECT a.attr__id, a.attr__name
+											FROM item_attr a
+											JOIN type_details d ON a.attr__id = d.tdetails__attr_id
+											WHERE d.tdetails__type_id = ' .$itemTypeId
+										);
+		$attributes = $this->db->resultSet();
+		if ($this->db->rowCount() > 0) {
+			return $attributes;
+		} else {
+			return false;
+		}
+	}
 
 	public function getTypeName($typeId)	{
 		$type = $this->getType($typeId);
 		$typeName = $type->type__name;
 		return $typeName;
+	}
+
+	public function calcItemEnc($containers) {
+		$encTotal = 0;
+		foreach ($containers as $contId => $items) {
+			$this->db->query('SELECT cont__worn FROM containers WHERE cont__id = ' .$contId);
+			$contWorn = $this->db->single();
+			if ($contWorn && $contWorn !== 0) { // If container found and it is 'worn'
+				foreach ($items as $item) {
+					$encTotal = $encTotal + $item->item__enc_total; // add each items enc to total
+				}
+			}
+		}
+		return $encTotal;
 	}
 
 }
